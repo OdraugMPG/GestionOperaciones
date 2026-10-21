@@ -7,7 +7,7 @@ export default function Cierre({ fecha }) {
   const [est] = useCarga(() => api.get('/api/estado' + qs({ fecha })), [fecha]);
   const [k, err] = useCarga(() => api.get('/api/kpi' + qs({ fecha, ...f })), [fecha, f.cd, f.turno]);
   const meta = k?.meta ?? 0.95;
-  const procs = ['INV', 'CONS', 'SU', 'SM'];
+  const procs = ['INV', 'CONS', 'SU', 'SM', 'REU'];
   return (
     <>
       <div className="top"><div><h1>Cierre de turno</h1><div className="sub">Cumplimiento contra la asignación del {fFecha(fecha)}. Meta {Math.round(meta * 100)}% en tareas y en unidades.</div></div>

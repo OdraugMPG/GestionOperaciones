@@ -10,6 +10,8 @@ import { guardarCarga } from './services/stock.js';
 import { generarAsignacion } from './services/asignacion.js';
 import { listarTareas, actualizarTarea, cierreConStock, kpi, archivoTurno, archivoWms, importarAvances } from './services/tareas.js';
 import { opciones, simularSlow, generarColaSlow, colaSlow, vaciarColaSlow } from './services/slow.js';
+import { abcXyz, guardarAbcXyz, cargarHistoria, borrarHistoria } from './services/abcXyz.js';
+import { optimizacion, generarReasignacion } from './services/optimizacion.js';
 import { leerReservadas } from './engine/base.js';
 import { hoyIso, up } from './engine/util.js';
 
@@ -93,7 +95,18 @@ app.get('/api/slow/opciones', r(() => opciones()));
 app.post('/api/slow/simular', r((req) => simularSlow(req.body || {})));
 app.post('/api/slow/generar', r((req) => generarColaSlow(req.body?.filtros || {}, req.body?.destino)));
 app.get('/api/slow/cola', r(() => colaSlow()));
-app.delete('/api/slow/cola', r((req) => vaciarColaSlow(req.query.cd)));
+app.delete('/api/slow/cola', r((req) => vaciarColaSlow(req.query.cd, req.query.tipo === 'REU' ? 'REU' : 'SM')));
+
+// ---- ABC / XYZ
+app.get('/api/abcxyz', r((req) => abcXyz(req.query)));
+app.post('/api/abcxyz/guardar', r((req) => guardarAbcXyz(req.body?.criterio, req.body?.metodo)));
+app.post('/api/abcxyz/historia', subir.single('archivo'), r(async (req) => {
+  if (!req.file) throw Object.assign(new Error('Adjunta el archivo de ventas mensuales.'), { status: 400 });
+  return cargarHistoria(req.file.buffer, req.file.originalname);
+}));
+app.delete('/api/abcxyz/historia', r(() => borrarHistoria()));
+app.get('/api/optimizacion', r(() => optimizacion()));
+app.post('/api/optimizacion/reasignar', r((req) => generarReasignacion(req.body?.tipo === 'traer' ? 'traer' : 'liberar', req.body?.limite)));
 
 // ---- configuración
 app.get('/api/config/cds', r(async () => (await q('SELECT * FROM cd_config ORDER BY cd')).rows));

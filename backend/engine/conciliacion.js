@@ -47,7 +47,7 @@ export function conciliar(tareas, antes, despues, reservadas) {
       const llego = g(despues, t.ubic_destino, t.sku) > g(antes, t.ubic_destino, t.sku);
       if (llego || (bajaOri > 0 && skuEnReservada.has(t.sku))) real = 1;
       else if (bajaOri > 0) obs = 'Salió del origen pero no aparece en una ubicación reservada.';
-    } else if (t.proceso === 'SM') {
+    } else if (t.proceso === 'SM' || t.proceso === 'REU') {
       real = Math.min(bajaOri, asig);
     }
     let estado = t.estado;

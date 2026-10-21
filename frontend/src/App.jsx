@@ -8,6 +8,8 @@ import MiTurno from './views/MiTurno.jsx';
 import Cierre from './views/Cierre.jsx';
 import Slow from './views/Slow.jsx';
 import Config from './views/Config.jsx';
+import AbcXyz from './views/AbcXyz.jsx';
+import Optimizacion from './views/Optimizacion.jsx';
 
 const VISTAS = {
   hoy: ['Asignación del día', Hoy],
@@ -16,9 +18,11 @@ const VISTAS = {
   turno: ['Mi turno', MiTurno],
   cierre: ['Cierre de turno', Cierre],
   slow: ['Slow moving', Slow],
+  abc: ['ABC / XYZ', AbcXyz],
+  opt: ['Optimización ABC', Optimizacion],
   config: ['Configuración', Config],
 };
-const NAV = { plan: ['hoy', 'tareas', 'conciliacion', 'cierre', 'slow', 'config'], sup: ['turno', 'cierre'], ger: ['cierre', 'slow'] };
+const NAV = { plan: ['hoy', 'tareas', 'conciliacion', 'cierre', 'slow', 'abc', 'opt', 'config'], sup: ['turno', 'cierre'], ger: ['cierre', 'slow', 'abc', 'opt'] };
 const leer = (k, d) => { try { return localStorage.getItem(k) || d; } catch { return d; } };
 const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch { /* sin almacenamiento */ } };
 

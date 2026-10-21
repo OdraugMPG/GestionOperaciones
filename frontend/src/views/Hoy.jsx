@@ -99,12 +99,12 @@ export default function Hoy({ fecha, irA }) {
                 <div className="card" key={c.cd}>
                   <h3>{c.cd}</h3>
                   <table>
-                    <thead><tr><th>Turno</th><th className="num">Inv.</th><th className="num">Cons.</th><th className="num">SU</th><th className="num">SM</th><th></th></tr></thead>
+                    <thead><tr><th>Turno</th><th className="num">Inv.</th><th className="num">Cons.</th><th className="num">SU</th><th className="num">SM</th><th className="num">Reub.</th><th></th></tr></thead>
                     <tbody>
                       {c.turnos.map((t) => (
                         <tr key={t.turno}>
                           <td>T{t.turno}<div className="note">{t.supervisor}</div></td>
-                          <td className="num">{t.INV || '—'}</td><td className="num">{t.CONS || '—'}</td><td className="num">{t.SU || '—'}</td><td className="num">{t.SM || '—'}</td>
+                          <td className="num">{t.INV || '—'}</td><td className="num">{t.CONS || '—'}</td><td className="num">{t.SU || '—'}</td><td className="num">{t.SM || '—'}</td><td className="num">{t.REU || '—'}</td>
                           <td><a className="btn sm" href={'/api/archivos/turno' + qs({ fecha, cd: c.cd, turno: t.turno })} title="Archivo .xlsx del supervisor">.xlsx</a></td>
                         </tr>
                       ))}

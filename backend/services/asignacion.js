@@ -6,6 +6,8 @@ import { filasDeCarga, cargaInicio } from './stock.js';
 import { planificarDia } from '../engine/plan.js';
 import { tareasConsolidacion, repartirConsolidacion, claveBloque } from '../engine/consolidacion.js';
 import { stockUnitario, repartirStockUnitario, SIN_UBICACION } from '../engine/stockUnitario.js';
+import { clasificacionActual } from './abcXyz.js';
+import { TODOS } from '../engine/abcXyz.js';
 import { up, cmp, fmtFecha } from '../engine/util.js';
 
 const T_COLS = ['asignacion_id', 'fecha', 'cd', 'turno', 'proceso', 'folio', 'sub', 'secuencia', 'piso', 'zona', 'ubic_origen', 'sku', 'descripcion',
@@ -36,6 +38,12 @@ export async function generarAsignacion(fecha, { forzar = false } = {}) {
   const { rows: resv } = await q('SELECT ubicacion, grupo, max FROM ubic_reservadas');
   const reservadas = new Set(resv.map((r) => up(r.ubicacion)));
   const cdsBase = new Set(filas.map((r) => r.cd));
+  // clase ABC/XYZ consolidada por SKU: prioriza la consolidación y queda en el detalle de cada tarea
+  let claseSku = new Map();
+  try { claseSku = new Map((await clasificacionActual()).grupos.get(TODOS).map((x) => [x.sku, x.matriz])); } catch (e) { L('ALERTA', 'ABC/XYZ', `Sin clasificación ABC/XYZ: ${e.message}`); }
+  const cls = (sku) => claseSku.get(sku) || '';
+  const conCls = (txt, sku) => (cls(sku) ? (txt ? `${txt} · ABC ${cls(sku)}` : `ABC ${cls(sku)}`) : txt || null);
+  const ORDEN_ABC = { A: 0, B: 1, C: 2 };
 
   const tareas = [], plan = [], resumen = [], smUsadas = [];
   for (const c of cds) {
@@ -101,7 +109,7 @@ export async function generarAsignacion(fecha, { forzar = false } = {}) {
 
     for (let tt = 1; tt <= nTur; tt++) {
       const s = sup(tt);
-      const rt = { turno: tt, supervisor: s, INV: 0, CONS: 0, SU: 0, SM: 0, unidades: 0, operarios: [] };
+      const rt = { turno: tt, supervisor: s, INV: 0, CONS: 0, SU: 0, SM: 0, REU: 0, unidades: 0, operarios: [] };
       // inventario del plan
       for (const l of pl.lineas.filter((x) => x.tarea === 'INVENTARIO' && x.turno === tt)) {
         tareas.push({ fecha, cd, turno: tt, proceso: 'INV', folio: `INV-${fecha.slice(8, 10)}${fecha.slice(5, 7)}-T${tt}`, sub: null, secuencia: null,
@@ -116,7 +124,9 @@ export async function generarAsignacion(fecha, { forzar = false } = {}) {
         if (!porSku.has(mv.sku)) porSku.set(mv.sku, []);
         porSku.get(mv.sku).push(mv);
       }
-      const gruposT = [...porSku.entries()].map(([sku, movs]) => ({ sku, movs })).sort((a, b) => b.movs.length - a.movs.length || cmp(a.sku, b.sku));
+      // primero los SKU clase A (picking más frecuente), después B y C; dentro de la clase, los que más ubicaciones liberan
+      const prio = (sku) => ORDEN_ABC[cls(sku)[0]] ?? 3;
+      const gruposT = [...porSku.entries()].map(([sku, movs]) => ({ sku, movs })).sort((a, b) => prio(a.sku) - prio(b.sku) || b.movs.length - a.movs.length || cmp(a.sku, b.sku));
       const lineasMover = [];
       gruposT.forEach((g, i) => g.movs.forEach((m) => lineasMover.push({ ...m, cd, folio: `T-${String(i + 1).padStart(5, '0')}`, sub: '1/1' })));
       if (lineasMover.length) {
@@ -129,7 +139,7 @@ export async function generarAsignacion(fecha, { forzar = false } = {}) {
           ls.sort((a, b) => cmp(a.orden, b.orden) || cmp(a.sku, b.sku) || cmp(a.ori, b.ori));
           ls.forEach((l, i) => tareas.push({ fecha, cd, turno: tt, proceso: 'CONS', folio: l.folio, sub: l.sub, secuencia: i + 1, piso: l.piso, zona: l.zp,
             ubic_origen: l.ori, sku: l.sku, descripcion: l.desc, ubic_destino: l.dest, asignado_a: l.op, supervisor: s, unid_asig: l.q, estado: 'PENDIENTE',
-            detalle: l.detalle, observacion: l.obs || null, ext_id: `CON|${l.folio}|${l.sub}|${l.ori}` }));
+            detalle: conCls(l.detalle, l.sku), observacion: l.obs || null, ext_id: `CON|${l.folio}|${l.sub}|${l.ori}` }));
         }
         rt.CONS = lineasMover.length; rt.unidades += lineasMover.reduce((a, l) => a + l.q, 0);
         rt.operarios = rep.resumen.filter((x) => x.bloques);
@@ -143,22 +153,28 @@ export async function generarAsignacion(fecha, { forzar = false } = {}) {
           const sinDest = l.dest === SIN_UBICACION;
           tareas.push({ fecha, cd, turno: tt, proceso: 'SU', folio: l.folio, sub: null, secuencia: l.sec, piso: l.piso, zona: l.zp, ubic_origen: l.ori, sku: l.sku,
             descripcion: l.desc, ubic_destino: l.dest, asignado_a: l.asignado, supervisor: s, unid_asig: 1, estado: sinDest ? 'SIN DESTINO' : 'PENDIENTE',
-            detalle: l.ocupacion ? `Destino ${l.grupo} · ocupación ${l.ocupacion}${l.libera ? ' · libera la ubicación' : ''}` : null, observacion: l.obs || null,
+            detalle: conCls(l.ocupacion ? `Destino ${l.grupo} · ocupación ${l.ocupacion}${l.libera ? ' · libera la ubicación' : ''}` : null, l.sku), observacion: l.obs || null,
             ext_id: `STO|${l.folio}||${l.ori}` });
           if (!sinDest) { rt.SU++; rt.unidades += 1; }
         }
       }
-      // slow moving en cola
+      // slow moving y reubicaciones ABC en cola
       if (tt === turSM && cola.length) {
-        cola.forEach((x, i) => {
-          tareas.push({ fecha, cd, turno: tt, proceso: 'SM', folio: `S-${String(i + 1).padStart(5, '0')}`, sub: null, secuencia: i + 1, piso: x.piso, zona: x.zona,
-            ubic_origen: x.ubicacion, sku: x.sku, descripcion: x.descripcion, ubic_destino: x.destino, asignado_a: `${pref} ${cd} T${tt} SM`, supervisor: s,
-            unid_asig: x.unidades, estado: 'PENDIENTE', detalle: `${x.depto} · ${x.temporada} · almacenado ${x.mes}`, observacion: null, ext_id: `SLO|S-${x.id}||${x.ubicacion}` });
+        const n = { SM: 0, REU: 0 };
+        cola.forEach((x) => {
+          const reu = x.tipo === 'REU';
+          const i = ++n[reu ? 'REU' : 'SM'];
+          tareas.push({ fecha, cd, turno: tt, proceso: reu ? 'REU' : 'SM', folio: `${reu ? 'R' : 'S'}-${String(i).padStart(5, '0')}`, sub: null, secuencia: i, piso: x.piso, zona: x.zona,
+            ubic_origen: x.ubicacion, sku: x.sku, descripcion: x.descripcion, ubic_destino: x.destino, asignado_a: `${pref} ${cd} T${tt} ${reu ? 'REU' : 'SM'}`, supervisor: s,
+            unid_asig: x.unidades, estado: 'PENDIENTE',
+            detalle: reu ? `Reubicación ABC ${x.temporada} → ${x.destino}` : conCls(`${x.depto} · ${x.temporada} · almacenado ${x.mes}`, x.sku),
+            observacion: null, ext_id: `${reu ? 'REU' : 'SLO'}|S-${x.id}||${x.ubicacion}` });
           rt.unidades += Number(x.unidades) || 0;
           smUsadas.push(x.id);
         });
-        rt.SM = cola.length;
-        L('INFO', `${cd} T${tt}`, `Slow moving: ${cola.length} tareas desde el simulador.`);
+        rt.SM = n.SM; rt.REU = n.REU;
+        if (n.SM) L('INFO', `${cd} T${tt}`, `Slow moving: ${n.SM} tareas desde el simulador.`);
+        if (n.REU) L('INFO', `${cd} T${tt}`, `Reubicación ABC: ${n.REU} tareas de alta rotación hacia ${up(p.cdPrioritario)}.`);
       }
       resCD.turnos.push(rt);
     }

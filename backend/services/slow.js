@@ -25,7 +25,7 @@ export async function opciones() {
 export async function simularSlow(filtros, limite = 500) {
   const d = await detalle();
   const r = simular(d.detalle, filtros);
-  const { rows: cola } = await q("SELECT cd, count(*)::int AS n FROM sm_cola WHERE estado = 'EN COLA' GROUP BY cd ORDER BY cd");
+  const { rows: cola } = await q("SELECT cd, count(*)::int AS n FROM sm_cola WHERE estado = 'EN COLA' AND tipo = 'SM' GROUP BY cd ORDER BY cd");
   return { carga: d.carga, total: r.total, porCD: r.porCD, filas: r.seleccion.length, detalle: r.seleccion.slice(0, limite).map(({ filas, ...x }) => x), cola };
 }
 
@@ -50,10 +50,10 @@ export async function generarColaSlow(filtros, destino) {
 }
 
 export async function colaSlow() {
-  const { rows } = await q("SELECT * FROM sm_cola WHERE estado = 'EN COLA' ORDER BY cd, id");
+  const { rows } = await q("SELECT * FROM sm_cola WHERE estado = 'EN COLA' AND tipo = 'SM' ORDER BY cd, id");
   return rows;
 }
-export async function vaciarColaSlow(cd) {
-  const r = await q("DELETE FROM sm_cola WHERE estado = 'EN COLA'" + (cd ? ' AND cd = $1' : ''), cd ? [cd] : []);
+export async function vaciarColaSlow(cd, tipo = 'SM') {
+  const r = await q("DELETE FROM sm_cola WHERE estado = 'EN COLA' AND tipo = $1" + (cd ? ' AND cd = $2' : ''), cd ? [tipo, cd] : [tipo]);
   return { eliminadas: r.rowCount };
 }

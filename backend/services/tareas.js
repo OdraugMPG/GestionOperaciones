@@ -5,7 +5,7 @@ import { filasDeCarga, guardarCarga } from './stock.js';
 import { conciliar, mapaStock } from '../engine/conciliacion.js';
 import { up, txt, num, normTxt, fmtFecha } from '../engine/util.js';
 
-export const PROCESOS = { INV: 'INVENTARIO', CONS: 'CONSOLIDACION', SU: 'STOCK UNITARIO', SM: 'SLOW MOVING' };
+export const PROCESOS = { INV: 'INVENTARIO', CONS: 'CONSOLIDACION', SU: 'STOCK UNITARIO', SM: 'SLOW MOVING', REU: 'REUBICACION ABC' };
 export const ESTADOS = ['PENDIENTE', 'PARCIAL', 'EJECUTADO', 'NO EJECUTADO'];
 
 export async function listarTareas(f) {

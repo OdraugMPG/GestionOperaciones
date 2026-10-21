@@ -18,7 +18,7 @@ export const api = {
 };
 export const qs = (o) => '?' + new URLSearchParams(Object.entries(o).filter(([, v]) => v !== '' && v !== undefined && v !== null)).toString();
 
-export const PROC = { INV: 'Inventario', CONS: 'Consolidación', SU: 'Stock unitario', SM: 'Slow moving' };
+export const PROC = { INV: 'Inventario', CONS: 'Consolidación', SU: 'Stock unitario', SM: 'Slow moving', REU: 'Reubicación ABC' };
 export const fmt = (n, d = 0) => (n === null || n === undefined || Number.isNaN(n) ? '—' : Number(n).toLocaleString('es-CL', { maximumFractionDigits: d, minimumFractionDigits: d }));
 export const pct = (x) => (x * 100).toFixed(1).replace('.', ',') + '%';
 export const fFecha = (iso) => (iso ? `${iso.slice(8, 10)}-${iso.slice(5, 7)}-${iso.slice(0, 4)}` : '');

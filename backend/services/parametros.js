@@ -22,11 +22,21 @@ export const DEFAULTS = {
   smDestino: { v: 'ZONA SLOW MOVING', n: 'Destino de las tareas slow moving' },
   suMaxDef: { v: 20, n: 'Stock unitario: capacidad por defecto de una reservada' },
   suMin2Op: { v: 20, n: 'Stock unitario: un piso con menos líneas recibe 1 operario' },
+  abcA: { v: 80, n: 'ABC: % acumulado de ventas que cubre la clase A' },
+  abcB: { v: 95, n: 'ABC: % acumulado de ventas que cubre las clases A + B' },
+  xyzRotX: { v: 1, n: 'XYZ por rotación: ventas / stock desde la que un SKU es X (Y = con venta; Z = sin venta o sin stock)' },
+  xyzX: { v: 0.5, n: 'XYZ por historia: coeficiente de variación máximo de la clase X' },
+  xyzY: { v: 1, n: 'XYZ por historia: coeficiente de variación máximo de la clase Y' },
+  xyzMeses: { v: 6, n: 'XYZ por historia: meses de ventas que se analizan' },
+  cdPrioritario: { v: 'CD2', n: 'CD prioritario para alta rotación (el más cercano a OSR y empaque)' },
+  invDiasA: { v: 30, n: 'Inventario cíclico: días entre conteos de una ubicación clase A' },
+  invDiasB: { v: 90, n: 'Inventario cíclico: días entre conteos de una ubicación clase B' },
+  invDiasC: { v: 180, n: 'Inventario cíclico: días entre conteos de una ubicación clase C' },
   horarioT1: { v: '07:00-15:00', n: 'Horario turno 1' },
   horarioT2: { v: '15:00-23:00', n: 'Horario turno 2' },
   horarioT3: { v: '23:00-07:00', n: 'Horario turno 3' },
 };
-const TEXTO = new Set(['porPiso', 'tramos', 'cdsExcluir', 'smDestino', 'horarioT1', 'horarioT2', 'horarioT3']);
+const TEXTO = new Set(['porPiso', 'tramos', 'cdsExcluir', 'smDestino', 'cdPrioritario', 'horarioT1', 'horarioT2', 'horarioT3']);
 
 export async function leerParametros() {
   const { rows } = await q('SELECT clave, valor FROM parametros');

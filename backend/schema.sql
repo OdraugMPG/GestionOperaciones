@@ -106,6 +106,26 @@ CREATE TABLE IF NOT EXISTS sm_cola (
   fecha_asig  date
 );
 
+-- Venta mensual por SKU para la clasificación XYZ. cd = '' cuando el archivo no trae CD (vale para todos).
+CREATE TABLE IF NOT EXISTS ventas_hist (
+  cd text NOT NULL DEFAULT '', sku text NOT NULL, mes text NOT NULL,   -- mes = 'YYYY-MM'
+  unidades numeric NOT NULL DEFAULT 0,
+  PRIMARY KEY (cd, sku, mes)
+);
+
+-- Última clasificación ABC/XYZ guardada, por CD y SKU.
+CREATE TABLE IF NOT EXISTS abc_xyz (
+  cd text NOT NULL, sku text NOT NULL,
+  abc text NOT NULL, xyz text, matriz text NOT NULL,
+  metrica numeric, pct_acum numeric, cv numeric,
+  criterio text NOT NULL, carga_id integer REFERENCES cargas(id) ON DELETE SET NULL,
+  actualizado_en timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (cd, sku)
+);
+ALTER TABLE sm_cola ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'SM';   -- SM = slow moving | REU = reubicación ABC al CD prioritario
+ALTER TABLE abc_xyz ADD COLUMN IF NOT EXISTS rotacion numeric;
+ALTER TABLE abc_xyz ADD COLUMN IF NOT EXISTS xyz_metodo text;   -- rotacion | historia
+
 CREATE TABLE IF NOT EXISTS conciliaciones (
   id serial PRIMARY KEY,
   fecha date, carga_id integer REFERENCES cargas(id) ON DELETE CASCADE, turno integer,
