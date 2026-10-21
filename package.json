@@ -1,0 +1,30 @@
+{
+  "name": "gestion-diaria-cd",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma web de gestión diaria de CD: plan diario, asignación, conciliación con stock y cierre de turno.",
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "dev": "concurrently -n api,web -c blue,green \"node --watch backend/index.js\" \"vite --config frontend/vite.config.js\"",
+    "build": "vite build --config frontend/vite.config.js",
+    "start": "node backend/index.js",
+    "ejemplo": "node scripts/generar-ejemplo.js",
+    "prueba-motor": "node scripts/prueba-motor.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "dotenv": "16.4.5",
+    "express": "4.21.2",
+    "multer": "1.4.5-lts.1",
+    "pg": "8.13.1",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.3.4",
+    "concurrently": "9.1.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "vite": "5.4.11"
+  }
+}
